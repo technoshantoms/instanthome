@@ -8,7 +8,7 @@ import { defineConfig, envField } from 'astro/config';
 export default defineConfig({
 	integrations: [tailwind({ applyBaseStyles: false }), icon(), solidJs()],
 	// Update to your storefront URL
-	site: 'https://shop.astro.build',
+	site: 'https://instanthome.life',
 	output: 'server',
 	adapter: netlify({ imageCDN: true }),
 	vite: {
@@ -23,7 +23,7 @@ export default defineConfig({
 		domains: [
 			'localhost',
 			'shop-next.astro.build',
-			'shop.astro.build',
+			'instanthome.life',
 			'main--astro-swag-shop.netlify.app',
 		],
 	},

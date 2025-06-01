@@ -158,7 +158,7 @@ const collections: Record<string, Collection> = {
 		name: 'Bungalow',
 		description: 'Modular ready house tiny drawer house mobile customizable prefab houses.It can settle down in any corner of the world. It can also be shipped  after finished in factory.Not only that, it also explainsWhat is a high-end mobile home.Under the premise of ensuring comfort.Taking health as the most important indicator and comparing the present to the future, we have developed a very livable housing system.',
 		slug: 'bungalow',
-		imageUrl: '/assets/astro-sticker-pack.png',
+		imageUrl: '/assets/astro-shirtskilong.png',
 		...collectionDefaults,
 	},
 	bestSellers: {
@@ -227,7 +227,7 @@ const products: Record<string, Product> = {
 		slug: 'astro-sticker-sheet',
 		tagline: "You probably want this for the fail whale sticker, don't you?",
 		price: 5500,
-		imageUrl: '/assets/astro-sticker-pack.png',
+		imageUrl: '/assets/astro-sticker-pack1.png',
 		collectionIds: ['bungalow'],
 	},
 	'sticker-pack': {
@@ -237,7 +237,7 @@ const products: Record<string, Product> = {
 		slug: 'sticker-pack',
 		tagline: 'Jam packed with the most popular stickers.',
 		price: 2000,
-		imageUrl: '/assets/astro-sticker-pack.png',
+		imageUrl: '/assets/astro-sticker-pack2.png',
 		collectionIds: ['bungalow', 'bestSellers'],
 	},
 	'astro-icon-unisex-shirt': {
@@ -289,7 +289,7 @@ const products: Record<string, Product> = {
 		tagline: 'You can fit a Hous-ton of these on any laptop lid.',
 		price: 250,
 		discount: 100,
-		imageUrl: '/assets/astro-houston-sticker.png',
+		imageUrl: '/assets/astro-houston-sticker1.png',
 		collectionIds: ['bungalow', 'bestSellers'],
 	},
 };
