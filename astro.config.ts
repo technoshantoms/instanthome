@@ -3,12 +3,13 @@ import solidJs from '@astrojs/solid-js';
 import tailwind from '@astrojs/tailwind';
 import icon from 'astro-icon';
 import { defineConfig, envField } from 'astro/config';
+import db from '@astrojs/db';
 
 // https://astro.build/config
 export default defineConfig({
-	integrations: [tailwind({ applyBaseStyles: false }), icon(), solidJs()],
+	integrations: [tailwind({ applyBaseStyles: false }), icon(), solidJs(), db()],
 	// Update to your storefront URL
-	site: 'https://instanthome.life',
+	site: 'https://instanthome.life', //change to live url
 	output: 'server',
 	adapter: netlify({ imageCDN: true }),
 	vite: {
@@ -22,9 +23,7 @@ export default defineConfig({
 		// Update to your own image domains
 		domains: [
 			'localhost',
-			'shop-next.astro.build',
 			'instanthome.life',
-			'main--astro-swag-shop.netlify.app',
 		],
 	},
 	experimental: {
@@ -71,24 +70,17 @@ export default defineConfig({
 					access: 'public',
 					optional: true,
 				}),
-				// Used by the Astro team for our internal backend
-				SHOP_API_URL: envField.string({
-					context: 'server',
-					access: 'public',
-					optional: true,
-				}),
-				SHOP_API_KEY: envField.string({
-					context: 'server',
-					access: 'secret',
-					optional: true,
-				}),
 				US_SHIPPING_RATE_ID: envField.string({
 					context: 'server',
 					access: 'secret',
+					// This is a random ID
+					default: 'mw5TYW8Dnlh56TRWKan',
 				}),
 				INTERNATIONAL_SHIPPING_RATE_ID: envField.string({
 					context: 'server',
 					access: 'secret',
+					// This is a random test key
+					default: 'miH7VKjht1sYabCgaY1',
 				}),
 			},
 		},

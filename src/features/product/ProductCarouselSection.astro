@@ -1,20 +1,14 @@
 ---
-import { type Product, getProducts } from 'storefront:client';
-import { getProductStock } from '~/lib/products.ts';
+import { type Product } from 'storefront:client';
 import ProductCard from './ProductCard.astro';
 import ProductCarousel, { MEASURED_ITEM_ID, GAP } from './ProductCarousel.tsx';
 
 type Props = {
 	heading: string;
-	filterProducts?: (products: Product[]) => Product[];
+	products: Product[];
 };
 
-const { heading, filterProducts = (products) => products } = Astro.props;
-
-const productsResponse = await getProducts();
-const products = filterProducts(productsResponse.data?.items ?? []).filter(
-	(product) => getProductStock(product) > 0,
-);
+const { heading, products } = Astro.props;
 ---
 
 <ProductCarousel {heading} client:idle>

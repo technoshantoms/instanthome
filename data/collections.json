@@ -1,0 +1,209 @@
+[
+  {
+    "id": "pre-engineered-houses",
+    "name": "prefab Homes",
+    "description": "pre-engineered houses",
+    "slug": "pre-engineered-houses",
+    "createdAt": "2024-10-25T21:42:01.354004",
+    "updatedAt": "2024-10-25T21:42:01.354010",
+    "deletedAt": null
+  },
+  {
+    "id": "accessories-and-clearance",
+    "name": "Accessories and Clearance",
+    "description": "Accessories and Clearance",
+    "slug": "accessories-and-clearance",
+    "createdAt": "2024-10-25T21:42:01.354004",
+    "updatedAt": "2024-10-25T21:42:01.354010",
+    "deletedAt": null
+  },
+  {
+    "id": "accessories",
+    "name": "Accessories",
+    "description": "Accessories",
+    "slug": "accessories",
+    "createdAt": "2024-10-25T21:42:01.354032",
+    "updatedAt": "2024-10-25T21:42:01.354033",
+    "deletedAt": null
+  },
+  {
+    "id": "formal-wear",
+    "name": "Formal Wear",
+    "description": "Formal Wear",
+    "slug": "formal-wear",
+    "createdAt": "2024-10-25T21:42:01.354042",
+    "updatedAt": "2024-10-25T21:42:01.354043",
+    "deletedAt": null
+  },
+  {
+    "id": "casual-shoes",
+    "name": "Casual Shoes",
+    "description": "Casual Shoes",
+    "slug": "casual-shoes",
+    "createdAt": "2024-10-25T21:42:01.354051",
+    "updatedAt": "2024-10-25T21:42:01.354052",
+    "deletedAt": null
+  },
+  {
+    "id": "bottomwear-and-clearance",
+    "name": "Bottomwear and Clearance",
+    "description": "Bottomwear and Clearance",
+    "slug": "bottomwear-and-clearance",
+    "createdAt": "2024-10-25T21:42:01.354063",
+    "updatedAt": "2024-10-25T21:42:01.354066",
+    "deletedAt": null
+  },
+  {
+    "id": "bottomwear",
+    "name": "Bottomwear",
+    "description": "Bottomwear",
+    "slug": "bottomwear",
+    "createdAt": "2024-10-25T21:42:01.354074",
+    "updatedAt": "2024-10-25T21:42:01.354075",
+    "deletedAt": null
+  },
+  {
+    "id": "sale",
+    "name": "Sale",
+    "description": "Sale",
+    "slug": "sale",
+    "createdAt": "2024-10-25T21:42:01.354083",
+    "updatedAt": "2024-10-25T21:42:01.354084",
+    "deletedAt": null
+  },
+  {
+    "id": "casual-wear-and-clearance",
+    "name": "Casual Wear and Clearance",
+    "description": "Casual Wear and Clearance",
+    "slug": "casual-wear-and-clearance",
+    "createdAt": "2024-10-25T21:42:01.354097",
+    "updatedAt": "2024-10-25T21:42:01.354098",
+    "deletedAt": null
+  },
+  {
+    "id": "footwear",
+    "name": "Footwear",
+    "description": "Footwear",
+    "slug": "footwear",
+    "createdAt": "2024-10-25T21:42:01.354105",
+    "updatedAt": "2024-10-25T21:42:01.354106",
+    "deletedAt": null
+  },
+  {
+    "id": "shirts",
+    "name": "Shirts",
+    "description": "Shirts",
+    "slug": "shirts",
+    "createdAt": "2024-10-25T21:42:01.354112",
+    "updatedAt": "2024-10-25T21:42:01.354113",
+    "deletedAt": null
+  },
+  {
+    "id": "winterwear-and-clearance",
+    "name": "Winterwear and Clearance",
+    "description": "Winterwear and Clearance",
+    "slug": "winterwear-and-clearance",
+    "createdAt": "2024-10-25T21:42:01.354124",
+    "updatedAt": "2024-10-25T21:42:01.354125",
+    "deletedAt": null
+  },
+  {
+    "id": "winterwear",
+    "name": "Winterwear",
+    "description": "Winterwear",
+    "slug": "winterwear",
+    "createdAt": "2024-10-25T21:42:01.354132",
+    "updatedAt": "2024-10-25T21:42:01.354133",
+    "deletedAt": null
+  },
+  {
+    "id": "sale-and-clearance",
+    "name": "Sale and Clearance",
+    "description": "Sale and Clearance",
+    "slug": "sale-and-clearance",
+    "createdAt": "2024-10-25T21:42:01.354142",
+    "updatedAt": "2024-10-25T21:42:01.354143",
+    "deletedAt": null
+  },
+  {
+    "id": "sports-wear",
+    "name": "Sports Wear",
+    "description": "Sports Wear",
+    "slug": "sports-wear",
+    "createdAt": "2024-10-25T21:42:01.354151",
+    "updatedAt": "2024-10-25T21:42:01.354152",
+    "deletedAt": null
+  },
+  {
+    "id": "formal-wear-and-clearance",
+    "name": "Formal Wear and Clearance",
+    "description": "Formal Wear and Clearance",
+    "slug": "formal-wear-and-clearance",
+    "createdAt": "2024-10-25T21:42:01.354162",
+    "updatedAt": "2024-10-25T21:42:01.354163",
+    "deletedAt": null
+  },
+  {
+    "id": "formal-shoes",
+    "name": "Formal Shoes",
+    "description": "Formal Shoes",
+    "slug": "formal-shoes",
+    "createdAt": "2024-10-25T21:42:01.354174",
+    "updatedAt": "2024-10-25T21:42:01.354179",
+    "deletedAt": null
+  },
+  {
+    "id": "tshirts",
+    "name": "Tshirts",
+    "description": "Tshirts",
+    "slug": "tshirts",
+    "createdAt": "2024-10-25T21:42:01.354194",
+    "updatedAt": "2024-10-25T21:42:01.354196",
+    "deletedAt": null
+  },
+  {
+    "id": "footwear-and-clearance",
+    "name": "Footwear and Clearance",
+    "description": "Footwear and Clearance",
+    "slug": "footwear-and-clearance",
+    "createdAt": "2024-10-25T21:42:01.354206",
+    "updatedAt": "2024-10-25T21:42:01.354206",
+    "deletedAt": null
+  },
+  {
+    "id": "ethnic-wear",
+    "name": "Ethnic Wear",
+    "description": "Ethnic Wear",
+    "slug": "ethnic-wear",
+    "createdAt": "2024-10-25T21:42:01.354214",
+    "updatedAt": "2024-10-25T21:42:01.354215",
+    "deletedAt": null
+  },
+  {
+    "id": "casual-wear",
+    "name": "Casual Wear",
+    "description": "Casual Wear",
+    "slug": "casual-wear",
+    "createdAt": "2024-10-25T21:42:01.354223",
+    "updatedAt": "2024-10-25T21:42:01.354224",
+    "deletedAt": null
+  },
+  {
+    "id": "tshirts-and-clearance",
+    "name": "Tshirts and Clearance",
+    "description": "Tshirts and Clearance",
+    "slug": "tshirts-and-clearance",
+    "createdAt": "2024-10-25T21:42:01.354271",
+    "updatedAt": "2024-10-25T21:42:01.354277",
+    "deletedAt": null
+  },
+  {
+    "id": "sports-shoes",
+    "name": "Sports Shoes",
+    "description": "Sports Shoes",
+    "slug": "sports-shoes",
+    "createdAt": "2024-10-25T21:42:01.354286",
+    "updatedAt": "2024-10-25T21:42:01.354287",
+    "deletedAt": null
+  }
+]

@@ -1,0 +1,4 @@
+[dev]
+command = "pnpm run dev"
+[images]
+remote_images = ["https://assets.myntassets.com/.*"]

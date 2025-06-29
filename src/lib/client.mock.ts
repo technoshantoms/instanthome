@@ -25,66 +25,183 @@ import type {
 	GetProductsData,
 	GetProductsError,
 	GetProductsResponse,
+	UpdateProductNameData,
+	UpdateProductNameError,
+	UpdateProductNameResponse,
 	Order,
 	Product,
 } from './client.types.ts';
+import {
+	db,
+	ProductsTable,
+	CollectionsTable,
+	isNull,
+	eq,
+	and,
+	like,
+	desc,
+	asc,
+	inArray,
+	count,
+	sql,
+	or,
+} from 'astro:db';
+import { productIdFromVariantId } from './util.ts';
+import { revalidateJob } from './jobs/revalidate.ts';
 
 export * from './client.types.ts';
 
-export const getProducts = <ThrowOnError extends boolean = false>(
-	options?: Options<GetProductsData, ThrowOnError>,
-): RequestResult<GetProductsResponse, GetProductsError, ThrowOnError> => {
-	let items = Object.values(products);
-	if (options?.query?.collectionId) {
-		const collectionId = options.query.collectionId;
-		items = items.filter((product) => product.collectionIds?.includes(collectionId));
+type DbProduct = typeof ProductsTable.$inferSelect;
+type DbCollection = typeof CollectionsTable.$inferSelect;
+type DbCount = { count: number };
+
+export const getProducts = async (
+	options?: Options<GetProductsData, false>,
+): RequestResult<GetProductsResponse, GetProductsError, false> => {
+	function buildQuery(options?: GetProductsData & { count?: boolean }) {
+		let whereClause = isNull(ProductsTable.deletedAt);
+		if (options?.query?.collectionId) {
+			const condition = like(ProductsTable.collectionIds, `%"${options.query.collectionId}"%`);
+			whereClause = and(whereClause, condition)!;
+		}
+		if (options?.query?.ids) {
+			const ids = Array.isArray(options.query.ids) ? options.query.ids : [options.query.ids];
+			if (ids.length > 0) {
+				const condition = inArray(ProductsTable.id, ids);
+				whereClause = and(whereClause, condition)!;
+			}
+		}
+		if (options?.query?.search) {
+			const search = '%' + options.query.search.toLowerCase() + '%';
+			whereClause = and(
+				whereClause,
+				or(
+					sql`lower(${ProductsTable.name}) like ${search}`,
+					sql`lower(${ProductsTable.description}) like ${search}`,
+				),
+			)!;
+		}
+
+		let query = (options?.count ? db.select({ count: count() }) : db.select())
+			.from(ProductsTable)
+			.where(whereClause)
+			.$dynamic(); // Allow further refinement
+
+		if (options?.query?.sort && options?.query?.order) {
+			const colName = options.query.sort;
+			let sortColumn =
+				colName === 'name'
+					? ProductsTable.name
+					: colName === 'price'
+						? ProductsTable.price
+						: ProductsTable.updatedAt;
+			query = query.orderBy(options.query.order === 'asc' ? asc(sortColumn) : desc(sortColumn));
+		}
+
+		if (options?.query?.limit) query = query.limit(options.query.limit);
+		if (options?.query?.offset) query = query.offset(options.query.offset);
+
+		return query;
 	}
-	if (options?.query?.ids) {
-		const ids = Array.isArray(options.query.ids) ? options.query.ids : [options.query.ids];
-		items = items.filter((product) => ids.includes(product.id));
-	}
-	if (options?.query?.sort && options?.query?.order) {
-		const { sort, order } = options.query;
-		if (sort === 'price') {
-			items = items.sort((a, b) => {
-				return order === 'asc' ? a.price - b.price : b.price - a.price;
-			});
-		} else if (sort === 'name') {
-			items = items.sort((a, b) => {
-				return order === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-			});
+
+	const query = buildQuery(options);
+
+	console.time('Fetching products from DB');
+	const dbItems = (await query) as DbProduct[];
+
+	let countResult: number | null = null;
+	if (options?.query?.withCount) {
+		const countQuery = buildQuery({
+			count: true,
+			query: { ...options.query, limit: undefined, offset: undefined },
+		});
+		const dbCount = (await countQuery) as unknown as DbCount[]; // TODO run concurrently with main query
+		if (dbCount.length === 1) {
+			countResult = dbCount[0]?.count ?? null;
+		} else {
+			console.trace('Failed to select count', options);
 		}
 	}
-	return asResult({ items, next: null });
+	console.timeEnd('Fetching products from DB');
+
+	const items = mapDbProducts(dbItems);
+	console.log('Fetched product count:', items.length);
+
+	return asResult({ items, next: null, count: countResult });
 };
 
-export const getProductById = <ThrowOnError extends boolean = false>(
-	options: Options<GetProductByIdData, ThrowOnError>,
-): RequestResult<GetProductByIdResponse, GetProductByIdError, ThrowOnError> => {
-	const product = products[options.path.id];
-	if (!product) {
+export const getProductById = async (
+	options: Options<GetProductByIdData, false>,
+): RequestResult<GetProductByIdResponse, GetProductByIdError, false> => {
+	const items: DbProduct[] = await db
+		.select()
+		.from(ProductsTable)
+		.where(eq(ProductsTable.id, options.path.id))
+		.limit(1);
+
+	if (items.length === 0) {
 		const error = asError<GetProductByIdError>({ error: 'not-found' });
 		if (options.throwOnError) throw error;
-		return error as RequestResult<GetProductByIdResponse, GetProductByIdError, ThrowOnError>;
+		return error as RequestResult<GetProductByIdResponse, GetProductByIdError, false>;
 	}
+
+	const product = mapDbProducts(items)[0]!;
 	return asResult(product);
 };
 
-export const getCollections = <ThrowOnError extends boolean = false>(
-	_options?: Options<GetCollectionsData, ThrowOnError>,
-): RequestResult<GetCollectionsResponse, GetCollectionsError, ThrowOnError> => {
-	return asResult({ items: Object.values(collections), next: null });
+export const updateProductName = async (
+	options: Options<UpdateProductNameData, false>,
+): RequestResult<UpdateProductNameResponse, UpdateProductNameError, false> => {
+	const baseUpdate = { updatedAt: new Date() };
+	const items = await db
+		.update(ProductsTable)
+		.set({ name: options.name, ...baseUpdate })
+		.where(eq(ProductsTable.id, options.id))
+		.returning({ id: ProductsTable.id });
+
+	if (items.length === 0) {
+		const error = asError<UpdateProductNameError>({ error: 'not-found' });
+		if (options.throwOnError) throw error;
+		return error as RequestResult<UpdateProductNameResponse, UpdateProductNameError, false>;
+	}
+
+	await revalidateJob({ trigger: 'user' }); // TODO trigger as a background event (can use async workloads and such)
+	return asResult({ updatedName: options.name });
 };
 
-export const getCollectionById = <ThrowOnError extends boolean = false>(
-	options: Options<GetCollectionByIdData, ThrowOnError>,
-): RequestResult<GetCollectionByIdResponse, GetCollectionByIdError, ThrowOnError> => {
-	const collection = collections[options.path.id];
-	if (!collection) {
+export const getCollections = async (
+	options?: Options<GetCollectionsData, false>,
+): RequestResult<GetCollectionsResponse, GetCollectionsError, false> => {
+	let query = db
+		.select()
+		.from(CollectionsTable)
+		.where(isNull(CollectionsTable.deletedAt))
+		.$dynamic();
+	if (options?.query?.limit) query = query.limit(options.query.limit);
+
+	const dbItems: DbCollection[] = await query;
+	const items = mapDbCollections(dbItems);
+	console.log('Fetched collection count:', items.length);
+
+	const result = asResult({ items, next: null });
+	return result;
+};
+
+export const getCollectionById = async (
+	options: Options<GetCollectionByIdData, false>,
+): RequestResult<GetCollectionByIdResponse, GetCollectionByIdError, false> => {
+	const items: DbCollection[] = await db
+		.select()
+		.from(CollectionsTable)
+		.where(eq(CollectionsTable.id, options.path.id))
+		.limit(1);
+
+	if (items.length === 0) {
 		const error = asError<GetCollectionByIdError>({ error: 'not-found' });
 		if (options.throwOnError) throw error;
-		return error as RequestResult<GetCollectionByIdResponse, GetCollectionByIdError, ThrowOnError>;
+		return error as RequestResult<GetCollectionByIdResponse, GetCollectionByIdError, false>;
 	}
+	const collection = mapDbCollections(items)[0]!;
 	return asResult({ ...collection, products: [] });
 };
 
@@ -103,10 +220,22 @@ export const createCustomer = <ThrowOnError extends boolean = false>(
 
 const orders: Record<string, Order> = {};
 
-export const createOrder = <ThrowOnError extends boolean = false>(
-	options?: Options<CreateOrderData, ThrowOnError>,
-): RequestResult<CreateOrderResponse, CreateOrderError, ThrowOnError> => {
+export const createOrder = async (
+	options?: Options<CreateOrderData, false>,
+): RequestResult<CreateOrderResponse, CreateOrderError, false> => {
 	if (!options?.body) throw new Error('No body provided');
+
+	const productIds = options.body.lineItems.map((item) =>
+		productIdFromVariantId(item.productVariantId),
+	);
+	const productsResponse = await getProducts({
+		query: { ids: productIds },
+	});
+	const products = productsResponse.data?.items;
+	if (!products) {
+		throw new Error('Failed to fetch products', { cause: productsResponse.error });
+	}
+
 	const order: Order = {
 		...options.body,
 		id: 'dk3fd0sak3d',
@@ -114,7 +243,7 @@ export const createOrder = <ThrowOnError extends boolean = false>(
 		lineItems: options.body.lineItems.map((lineItem) => ({
 			...lineItem,
 			id: crypto.randomUUID(),
-			productVariant: getProductVariantFromLineItemInput(lineItem.productVariantId),
+			productVariant: getProductVariantFromLineItemInput(lineItem.productVariantId, products),
 		})),
 		billingAddress: getAddress(options.body.billingAddress),
 		shippingAddress: getAddress(options.body.shippingAddress),
@@ -136,162 +265,6 @@ export const getOrderById = <ThrowOnError extends boolean = false>(
 		return error as RequestResult<GetOrderByIdResponse, GetOrderByIdError, ThrowOnError>;
 	}
 	return asResult(order);
-};
-
-const collectionDefaults = {
-	createdAt: new Date().toISOString(),
-	updatedAt: new Date().toISOString(),
-	deletedAt: null,
-};
-
-const collections: Record<string, Collection> = {
-	villa: {
-		id: 'villa',
-		name: 'Villa',
-		description: 'Light gauge steel villa luxurious multiple rooms prefab house.Also known as light steel structure housing, its main material is by hot dip galvanized steel strip by cold rolling technology synthesis of light steel keel, after accurate calculation plus auxiliary support and combination, play a reasonable bearing capacity, to replace the traditional housing.',
-		slug: 'villa',
-		imageUrl: '/assets/shirts.png',
-		...collectionDefaults,
-	},
-	bungalow: {
-		id: 'bungalow',
-		name: 'Bungalow',
-		description: 'Modular ready house tiny drawer house mobile customizable prefab houses.It can settle down in any corner of the world. It can also be shipped  after finished in factory.Not only that, it also explainsWhat is a high-end mobile home.Under the premise of ensuring comfort.Taking health as the most important indicator and comparing the present to the future, we have developed a very livable housing system.',
-		slug: 'bungalow',
-		imageUrl: '/assets/astro-shirtskilong.png',
-		...collectionDefaults,
-	},
-	bestSellers: {
-		id: 'bestSellers',
-		name: 'Best Sellers',
-		description: "You'll love these.",
-		slug: 'best-sellers',
-		imageUrl: '/assets/astro-houston-sticker.png',
-		...collectionDefaults,
-	},
-};
-
-const defaultVariant = {
-	id: 'default',
-	name: 'Default',
-	stock: 20,
-	options: {},
-};
-
-const apparelVariants = ['1BDR', '2BDR', '3BDR', '5BDR'].map((size, index) => ({
-	id: size,
-	name: size,
-	stock: index * 10,
-	options: {
-		Size: size,
-	},
-}));
-
-const productDefaults = {
-	description: '',
-	images: [],
-	variants: [defaultVariant],
-	discount: 0,
-	createdAt: new Date().toISOString(),
-	updatedAt: new Date().toISOString(),
-	deletedAt: null,
-};
-
-const products: Record<string, Product> = {
-	'astro-icon-zip-up-hoodie': {
-		...productDefaults,
-		id: 'astro-icon-zip-up-hoodie',
-		name: 'Light gauge steel villa luxurious',
-		slug: 'astro-icon-zip-up-hoodie',
-		tagline:
-			'No need to compress this .zip. The Zip Up Hoodie is a comfortable fit and fabric for all sizes.',
-		price: 6500,
-		imageUrl: '/assets/astro-zip-up-hoodie.png',
-		collectionIds: ['villa', 'bestSellers'],
-		variants: apparelVariants,
-	},
-	'astro-logo-curve-bill-snapback-cap': {
-		...productDefaults,
-		id: 'astro-logo-curve-bill-snapback-cap',
-		name: 'Light gauge steel villa luxurious',
-		slug: 'astro-logo-curve-bill-snapback-cap',
-		tagline: 'The best hat for any occasion, no cap.',
-		price: 5500,
-		imageUrl: '/assets/astro-cap.png',
-		collectionIds: ['villa'],
-	},
-	'astro-sticker-sheet': {
-		...productDefaults,
-		id: 'astro-sticker-sheet',
-		name: 'Three BDR Bungalow',
-		slug: 'astro-sticker-sheet',
-		tagline: "You probably want this for the fail whale sticker, don't you?",
-		price: 5500,
-		imageUrl: '/assets/astro-sticker-pack1.png',
-		collectionIds: ['bungalow'],
-	},
-	'sticker-pack': {
-		...productDefaults,
-		id: 'sticker-pack',
-		name: 'Bungalow',
-		slug: 'sticker-pack',
-		tagline: 'Jam packed with the most popular stickers.',
-		price: 2000,
-		imageUrl: '/assets/astro-sticker-pack2.png',
-		collectionIds: ['bungalow', 'bestSellers'],
-	},
-	'astro-icon-unisex-shirt': {
-		...productDefaults,
-		id: 'astro-icon-unisex-shirt',
-		name: 'Light gauge steel villa',
-		slug: 'astro-icon-unisex-shirt',
-		tagline: 'A comfy Tee with the classic Astro logo.',
-		price: 5775,
-		imageUrl: '/assets/astro-unisex-tshirt.png',
-		collectionIds: ['villa'],
-		variants: apparelVariants,
-	},
-	'astro-icon-gradient-sticker': {
-		...productDefaults,
-		id: 'astro-icon-gradient-sticker',
-		name: 'Bungalow',
-		slug: 'astro-icon-gradient-sticker',
-		tagline: "There gradi-ain't a better sticker than the classic Astro logo.",
-		price: 200,
-		imageUrl: '/assets/astro-icon-sticker.png',
-		collectionIds: ['bungalow', 'bestSellers'],
-	},
-	'astro-logo-beanie': {
-		...productDefaults,
-		id: 'astro-logo-beanie',
-		name: 'School Building',
-		slug: 'astro-logo-beanie',
-		tagline: "There's never Bean a better hat for the winter season.",
-		price: 1800,
-		imageUrl: '/assets/astro-beanie.png',
-		collectionIds: ['villa', 'bestSellers'],
-	},
-	'lighthouse-100-sticker': {
-		...productDefaults,
-		id: 'lighthouse-100-sticker',
-		name: 'Lighthouse 100 Sticker',
-		slug: 'lighthouse-100-sticker',
-		tagline: 'Bad performance? Not in my (light) house.',
-		price: 500,
-		imageUrl: '/assets/astro-lighthouse-sticker.png',
-		collectionIds: ['bungalow'],
-	},
-	'houston-sticker': {
-		...productDefaults,
-		id: 'houston-sticker',
-		name: 'Houston Sticker',
-		slug: 'houston-sticker',
-		tagline: 'You can fit a Hous-ton of these on any laptop lid.',
-		price: 250,
-		discount: 100,
-		imageUrl: '/assets/astro-houston-sticker1.png',
-		collectionIds: ['bungalow', 'bestSellers'],
-	},
 };
 
 function asResult<T>(data: T) {
@@ -329,8 +302,9 @@ function getAddress(address: Required<CreateOrderData>['body']['shippingAddress'
 
 function getProductVariantFromLineItemInput(
 	variantId: string,
+	products: Product[],
 ): NonNullable<Order['lineItems']>[number]['productVariant'] {
-	for (const product of Object.values(products)) {
+	for (const product of products) {
 		for (const variant of product.variants) {
 			if (variant.id === variantId) {
 				return { ...variant, product };
@@ -338,4 +312,41 @@ function getProductVariantFromLineItemInput(
 		}
 	}
 	throw new Error(`Product variant ${variantId} not found`);
+}
+
+const apparelSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+
+function makeVariants(product: DbProduct) {
+	const apparelVariants = apparelSizes.map((size, index) => ({
+		id: `${product.id}|${size}`,
+		name: size,
+		stock: index * 10,
+		options: {
+			Size: size,
+		},
+	}));
+	return apparelVariants;
+}
+
+function mapDbProducts(selectResponse: DbProduct[]): Product[] {
+	return selectResponse.map((item) => ({
+		...item,
+		collectionIds: item.collectionIds as string[],
+		variants: makeVariants(item),
+		createdAt: item.createdAt.toISOString(),
+		updatedAt: item.updatedAt.toISOString(),
+		deletedAt: null,
+		images: [],
+	}));
+}
+
+function mapDbCollections(selectResponse: DbCollection[]): Collection[] {
+	return selectResponse.map((item) => ({
+		...item,
+		description: item.description!,
+		createdAt: item.createdAt.toISOString(),
+		updatedAt: item.updatedAt.toISOString(),
+		imageUrl: undefined,
+		deletedAt: null,
+	}));
 }

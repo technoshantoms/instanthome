@@ -19,3 +19,9 @@ client.setConfig({
 
 export * from './.client/services.gen.js';
 export * from './.client/types.gen.js';
+
+
+// ASTRO_DB_REMOTE_URL=libsql://acloudbank-acloudbank.aws-ap-northeast-1.turso.io
+// ASTRO_DB_APP_TOKEN=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NTExMDI3NzksImlkIjoiMGM1ODU1MjUtZTQ3Ni00NDNmLThiN2EtMWIwZmEzODFiNzEzIiwicmlkIjoiMWJmYmFjYzYtMzg2NC00ZWYwLTg5MTktNDJjOGZiZjY3MmFjIn0.djLHwp7zSiQVnTxdKKK-Bai-80MMgFLi6sn1xx1nX63SXggzHNeJMFqL8r3pZRyhWUvvdq2eNRbMC7TV0mGmCQ
+// BASIC_PASSWORD=ec0ff5dcfcc052c7c6d70c44698ba9765a14219a14886639e8867c815d15021b
+// JWT_SECRET=ec0ff5dcfcc052c7c6d70c44698ba9765a14219a14886639e8867c815d15021b
